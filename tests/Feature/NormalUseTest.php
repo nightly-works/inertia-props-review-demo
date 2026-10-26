@@ -18,16 +18,16 @@ class NormalUseTest extends TestCase
         $this->seedCrew();
     }
 
-    public function test_a_technician_sees_his_jobs_and_the_crew_names(): void
+    public function test_a_technician_sees_his_jobs(): void
     {
         $this->actingAs($this->tom)->get('/dashboard')->assertInertia(fn (Assert $page) => $page
             ->component('Dashboard')
             ->has('jobs', 1)
             ->where('jobs.0.title', 'Boiler service')
+            ->where('jobs.0.scheduled_on', '2026-11-03')
+            ->where('jobs.0.client.name', 'Hôtel Bellecour')
             ->where('auth.user.name', 'Tom')
-            ->where('auth.user.role', 'technician')
-            ->has('team', 3)
-            ->where('team.0.name', 'Léa'));
+            ->where('auth.user.role', 'technician'));
     }
 
     public function test_a_technician_opens_a_client_page(): void
@@ -36,6 +36,7 @@ class NormalUseTest extends TestCase
             ->component('Clients/Show')
             ->where('client.contact_email', 'tech@bellecour.test')
             ->has('client.site_jobs', 2));
+        $this->actingAs($this->lea)->get('/clients/'.$this->otherClient->id)->assertOk();
     }
 
     public function test_a_manager_sees_internal_notes_and_the_payroll(): void
@@ -44,7 +45,7 @@ class NormalUseTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->where('client.internal_notes', 'Pays late; asked for a 15 % discount next year, refused'));
 
         $page = $this->actingAs($this->manager)->get('/dashboard');
-        $page->assertInertia(fn (Assert $p) => $p->has('jobs', 2)->missing('payroll'));
+        $page->assertInertia(fn (Assert $p) => $p->has('jobs', 3)->where('jobs.0.price_cents', 48000)->missing('payroll'));
         $payroll = $this->actingAs($this->manager)->get('/dashboard', [
             'X-Inertia' => 'true',
             'X-Inertia-Version' => (string) $page->viewData('page')['version'],
@@ -56,7 +57,13 @@ class NormalUseTest extends TestCase
 
     public function test_a_manager_edits_a_job(): void
     {
-        $this->actingAs($this->manager)->get('/jobs/'.$this->tomsJob->id.'/edit')->assertInertia(fn (Assert $page) => $page->component('Jobs/Edit'));
+        $this->actingAs($this->manager)->get('/jobs/'.$this->tomsJob->id.'/edit')->assertInertia(fn (Assert $page) => $page
+            ->component('Jobs/Edit')
+            ->where('job.scheduled_on', '2026-11-03')
+            ->where('technicians', [['id' => $this->lea->id, 'name' => 'Léa'], ['id' => $this->tom->id, 'name' => 'Tom']]));
+        $this->actingAs($this->manager)->put('/jobs/'.$this->tomsJob->id, [
+            'title' => 'Boiler service', 'scheduled_on' => '2026-11-05', 'price_cents' => 52000, 'technician_id' => $this->manager->id,
+        ])->assertSessionHasErrors('technician_id');
         $this->actingAs($this->manager)->put('/jobs/'.$this->tomsJob->id, [
             'title' => 'Boiler service', 'scheduled_on' => '2026-11-05', 'price_cents' => 52000, 'technician_id' => $this->lea->id,
         ])->assertRedirect('/dashboard');

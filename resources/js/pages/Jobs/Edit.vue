@@ -1,7 +1,7 @@
 <script setup>
 import { useForm } from '@inertiajs/vue3';
 
-const props = defineProps({ job: Object });
+const props = defineProps({ job: Object, technicians: Array });
 const form = useForm({ ...props.job });
 </script>
 
@@ -10,6 +10,9 @@ const form = useForm({ ...props.job });
         <input v-model="form.title">
         <input v-model="form.scheduled_on" type="date">
         <input v-model.number="form.price_cents" type="number">
+        <select v-model="form.technician_id">
+            <option v-for="tech in technicians" :key="tech.id" :value="tech.id">{{ tech.name }}</option>
+        </select>
         <button>Save</button>
     </form>
 </template>

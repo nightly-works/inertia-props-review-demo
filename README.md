@@ -4,10 +4,12 @@ A proof piece for reviews of Laravel apps built with Inertia (Vue or React), the
 
 | # | Leak | Severity | Fix |
 |---|---|---|---|
-| 1 | Shared props send every colleague's full record on every page: home address, phone, hourly cost | high | ids, names and the user's role only |
-| 2 | Client notes hidden with `v-if` for technicians, but sent in the props | high | props built per role |
+| 1 | Shared props send every colleague's full record on every page: home address, phone, hourly cost | high | the user's id, name and role only; technicians' names where an assignee is picked |
+| 2 | Client notes and job prices hidden from technicians with `v-if`, but sent in the props | high | props built per role |
 | 3 | Edit link hidden from technicians; the routes check nothing | high | policy in the controller |
-| 4 | An optional prop (payroll) loadable by anyone with partial reload headers | medium | prop defined for managers only |
+| 4 | An optional prop (payroll) loadable by anyone with partial reload headers | high | prop defined for managers only |
+
+The review pass also found client pages any technician could open by id: fixed and tested.
 
 Full write-up, in the format a client would receive: [docs/security-review.md](docs/security-review.md).
 

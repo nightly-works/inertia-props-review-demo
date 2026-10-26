@@ -14,9 +14,11 @@ class DashboardController extends Controller
         $user = $request->user();
 
         $props = [
+            // Technicians get their own jobs, without prices.
             'jobs' => SiteJob::with('client:id,name')
                 ->when(! $user->isManager(), fn ($q) => $q->where('technician_id', $user->id))
-                ->orderBy('scheduled_on')->get(),
+                ->orderBy('scheduled_on')
+                ->get($user->isManager() ? ['*'] : ['id', 'client_id', 'title', 'scheduled_on']),
         ];
 
         // Loaded when a manager clicks "Payroll" (partial reload). Any client can send the

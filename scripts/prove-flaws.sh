@@ -41,7 +41,7 @@ results=$(php -r '
   }' junit-as-delivered.xml)
 
 status=0
-for t in test_1_ test_2_ test_3_ test_4_; do
+for t in test_1_ test_2_ test_2b_ test_3_ test_4_; do
   line=$(grep "^${t}" <<<"$results" || true)
   case "$line" in
     *" failed") echo "as delivered, leak reproduces: ${line% failed}" ;;

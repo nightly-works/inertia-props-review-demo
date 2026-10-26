@@ -19,6 +19,8 @@ trait Crew
 
     protected SiteJob $tomsJob;
 
+    protected Client $otherClient; // no job assigned to Tom
+
     protected function seedCrew(): void
     {
         $this->withoutVite();
@@ -28,11 +30,17 @@ trait Crew
         $this->client = Client::create(['name' => 'Hôtel Bellecour', 'contact_email' => 'tech@bellecour.test', 'internal_notes' => 'Pays late; asked for a 15 % discount next year, refused']);
         $this->tomsJob = SiteJob::create(['client_id' => $this->client->id, 'technician_id' => $this->tom->id, 'title' => 'Boiler service', 'scheduled_on' => '2026-11-03', 'price_cents' => 48000]);
         SiteJob::create(['client_id' => $this->client->id, 'technician_id' => $this->lea->id, 'title' => 'Heat pump check', 'scheduled_on' => '2026-11-04', 'price_cents' => 32000]);
+        $this->otherClient = Client::create(['name' => 'Clinique Fourvière', 'contact_email' => 'works@fourviere.test', 'internal_notes' => 'Tender for 2027 maintenance: our bid 41,000 €']);
+        SiteJob::create(['client_id' => $this->otherClient->id, 'technician_id' => $this->lea->id, 'title' => 'Ventilation audit', 'scheduled_on' => '2026-11-06', 'price_cents' => 91000]);
     }
 
-    /** Props as they are written into the page's HTML (the data-page attribute). */
+    /** Props as they are written into the page's HTML: the JSON in <script data-page="app">. */
     protected function pageProps($response): array
     {
-        return $response->assertOk()->viewData('page')['props'];
+        $html = $response->assertOk()->getContent();
+        preg_match('#<script data-page="app" type="application/json">(.*?)</script>#s', $html, $match);
+        $this->assertNotEmpty($match, 'no Inertia page in the HTML');
+
+        return json_decode($match[1], true, flags: JSON_THROW_ON_ERROR)['props'];
     }
 }

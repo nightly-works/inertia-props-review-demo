@@ -11,7 +11,7 @@ class SiteJob extends Model
 {
     protected function casts(): array
     {
-        return ['scheduled_on' => 'date'];
+        return ['scheduled_on' => 'date:Y-m-d'];
     }
 
     public function client(): BelongsTo

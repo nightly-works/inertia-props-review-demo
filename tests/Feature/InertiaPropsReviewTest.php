@@ -32,6 +32,7 @@ class InertiaPropsReviewTest extends TestCase
         $this->assertStringNotContainsString('12 cours Gambetta', $json, 'LEAK: home address');
         $this->assertStringNotContainsString('+33 6 10 00 00 03', $json, 'LEAK: phone');
         $this->assertStringNotContainsString('hourly_cost_cents', $json, 'LEAK: pay');
+        $this->assertSame(['id', 'name', 'role'], array_keys($props['auth']['user']), 'LEAK: user fields');
     }
 
     // Finding 2: the Vue page hides internal notes from technicians; the prop still carries them.
@@ -40,15 +41,28 @@ class InertiaPropsReviewTest extends TestCase
         $props = $this->pageProps($this->actingAs($this->tom)->get('/clients/'.$this->client->id));
 
         $this->assertStringNotContainsString('15 %', json_encode($props), 'LEAK: internal notes');
+        $this->assertStringNotContainsString('price_cents', json_encode($props), 'LEAK: job prices on the client page');
         $this->assertSame('Hôtel Bellecour', $props['client']['name']);
+
+        $dashboard = $this->pageProps($this->actingAs($this->tom)->get('/dashboard'));
+        $this->assertStringNotContainsString('price_cents', json_encode($dashboard['jobs']), 'LEAK: job prices on the dashboard');
+    }
+
+    // Found in the review pass: any client page opened by id.
+    public function test_2b_a_technician_cannot_open_a_client_he_has_no_job_with(): void
+    {
+        $response = $this->actingAs($this->tom)->get('/clients/'.$this->otherClient->id);
+
+        $this->assertSame(403, $response->status(), 'LEAK: client opened by id');
     }
 
     // Finding 3: the Edit link is hidden for technicians; the routes are not protected.
     public function test_3_a_technician_cannot_change_a_job_s_price(): void
     {
-        $this->actingAs($this->tom)->put('/jobs/'.$this->tomsJob->id, [
+        $save = $this->actingAs($this->tom)->put('/jobs/'.$this->tomsJob->id, [
             'title' => 'Boiler service', 'scheduled_on' => '2026-11-03', 'price_cents' => 1, 'technician_id' => $this->tom->id,
         ]);
+        $this->assertSame(403, $save->status(), 'LEAK: save accepted');
         $edit = $this->actingAs($this->tom)->get('/jobs/'.$this->tomsJob->id.'/edit');
 
         $this->assertSame(48000, $this->tomsJob->fresh()->price_cents, 'LEAK: price changed');
