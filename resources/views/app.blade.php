@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Crewdesk</title>
+    <title>Field service</title>
     @vite(['resources/js/app.js'])
     @inertiaHead
 </head>
