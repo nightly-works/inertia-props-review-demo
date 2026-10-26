@@ -13,12 +13,18 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        return Inertia::render('Dashboard', [
+        $props = [
             'jobs' => SiteJob::with('client:id,name')
                 ->when(! $user->isManager(), fn ($q) => $q->where('technician_id', $user->id))
                 ->orderBy('scheduled_on')->get(),
-            // Loaded only when a manager clicks "Payroll" (partial reload).
-            'payroll' => Inertia::optional(fn () => User::orderBy('name')->get(['name', 'hourly_cost_cents'])),
-        ]);
+        ];
+
+        // Loaded when a manager clicks "Payroll" (partial reload). Any client can send the
+        // partial reload headers, so the prop exists for managers only.
+        if ($user->isManager()) {
+            $props['payroll'] = Inertia::optional(fn () => User::orderBy('name')->get(['name', 'hourly_cost_cents']));
+        }
+
+        return Inertia::render('Dashboard', $props);
     }
 }
